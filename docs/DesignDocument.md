@@ -54,6 +54,60 @@ Each stage knows which resources it needs. Before executing, it sorts its requir
 
 <img width="2944" height="8160" alt="4  stage-execution-flow" src="https://github.com/user-attachments/assets/0d58ea04-b322-44b5-830a-0abbf6920191" />
 
+## 4. Communication Patterns
+
+The components communicate in a top-down flow:
+ 
+1. **Sensors** continuously produce readings independently on their own threads.
+2. **Machine Controller** reads the latest value from each sensor.
+3. **Machine Controller** passes these values to the **Rule Engine**.
+4. **Rule Engine** evaluates the rules and returns a list of stages to run.
+5. **Machine Controller** launches the **Stages** in parallel.
+6. Each **Stage** acquires its **Resources**, performs work, and releases them.
+
+Stages do not communicate with each other directly. They interact only through shared resources, which is where concurrency management is critical.
+
+## 5. Concurrency Strategy
+
+The system must handle three types of concurrency problems.
+
+### 5.1 Deadlock Prevention
+ 
+**Problem:** Stages run in parallel and share resources. If stages acquire resources in different orders, a circular wait can occur.
+ 
+Example scenario where all three stages run simultaneously:
+- stage_1 grabs R_B, then wants R_A
+- stage_2 grabs R_C, then wants R_B
+- stage_3 grabs R_A, then wants R_C
+Result: stage_1 is waiting for R_A (held by stage_3), stage_3 is waiting for R_C (held by stage_2), stage_2 is waiting for R_B (held by stage_1). A circular chain — deadlock.
+ 
+**Solution:** Enforce a total ordering on resource acquisition. All stages must acquire resources in alphabetical order: R_A → R_B → R_C, regardless of which resources they need. This breaks the circular wait condition and makes deadlock impossible.
+ 
+- stage_1 (needs R_A, R_B) → acquires R_A first, then R_B
+- stage_2 (needs R_B, R_C) → acquires R_B first, then R_C
+- stage_3 (needs R_A, R_C) → acquires R_A first, then R_C
+**Mechanism:** Each resource is assigned a numeric priority (R_A=1, R_B=2, R_C=3). Before execution, a stage sorts its required resources by priority and acquires them in that order.
+ 
+### 5.2 Atomicity Violation Prevention
+ 
+**Problem:** When two stages check a resource's state and try to acquire it simultaneously, a race condition can occur.
+ 
+Example:
+- stage_1 checks: "Is R_A idle?" → Yes
+- stage_3 checks: "Is R_A idle?" → Yes (checked at the same time)
+- Both stages set R_A to Busy — both think they own it
+The check-then-acquire is two separate operations, and another thread can intervene between them.
+ 
+**Solution:** Use `SemaphoreSlim(1)` for each resource. The semaphore combines the check and acquire into a single atomic operation. If one stage acquires the semaphore, the other automatically waits — there is no gap for a race condition.
+ 
+### 5.3 Order Violation Prevention
+ 
+**Problem:** The Machine Controller starts the sensors and then immediately begins the main loop. If the main loop reads sensor values before the sensors have produced their first reading, the system could operate on default/uninitialized values, leading to incorrect rule evaluation.
+ 
+**Solution:** Use `ManualResetEventSlim` as a signal. Sensors signal when they have produced their first valid reading. The Machine Controller waits for this signal before entering the main loop. This guarantees that sensor data is available before any stages are launched.
+
+
+
 
 
 
