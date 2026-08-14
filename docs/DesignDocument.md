@@ -106,7 +106,46 @@ The check-then-acquire is two separate operations, and another thread can interv
  
 **Solution:** Use `ManualResetEventSlim` as a signal. Sensors signal when they have produced their first valid reading. The Machine Controller waits for this signal before entering the main loop. This guarantees that sensor data is available before any stages are launched.
 
+## 6. Design Considerations
 
+### Extensibility
+ 
+- **Sensors** implement a common interface (`ISensor`). Adding a new sensor type (e.g., Humidity) requires creating a new class that implements `ISensor` and registering it with the Machine Controller. No existing code needs to change.
+- **Rules** are stored as a configurable list in the Rule Engine. Adding a new rule means adding one entry to the list — no changes to existing rules.
+- **Resources** are registered dynamically. Adding a new resource (e.g., R_D) requires creating a new `Resource` instance and updating the stage map.
+### Maintainability
+ 
+- Each component has a single, clear responsibility. If sensor reading logic needs to change, only the Sensor class is affected.
+- Components are loosely coupled — the Rule Engine does not know how sensors produce their values, and Stages do not know how rules work.
+- Small, focused classes make the codebase easy to navigate and understand.
+### Testability
+ 
+- Each component can be tested independently. The Rule Engine can be tested by passing fake sensor values and verifying which stages it returns — no real sensors needed.
+- Stages can be tested with mock resources to verify correct acquisition order and release behavior.
+- Concurrency behavior can be tested by running multiple stages in parallel and verifying that no resource is acquired by two stages simultaneously.
+- Interfaces allow swapping real implementations with test doubles.
+### Reliability
+ 
+- Resources have an `Error` state to handle failure scenarios. If a stage encounters an error during processing, the resource transitions to Error instead of remaining stuck in Busy.
+- Stages use `try/finally` to guarantee that resources are always released, even when exceptions occur. This prevents resources from being permanently locked.
+- The Machine Controller can implement timeouts to detect stages that take too long and handle them gracefully.
+- Sensors that stop producing readings can be detected and reported.
+
+## 7. Technology Choices
+ 
+| Choice | Reason |
+|---|---|
+| **C# / .NET 8** | Strong async/await support, built-in concurrency primitives (`SemaphoreSlim`, `ManualResetEventSlim`, `lock`), robust threading model |
+| **xUnit** | Industry-standard testing framework for .NET |
+| **No external dependencies** | All required concurrency mechanisms are available in the .NET base class library |
+ 
+## 8. Assumptions
+ 
+- The system controls a single manufacturing machine.
+- Sensor values are simulated (generated randomly or from a predefined pattern).
+- Stage processing is simulated (using `Task.Delay` to represent work being done).
+- Resources are simple in-memory objects with state tracking, not connected to real hardware.
+- All three rules are evaluated on every sensor update cycle; multiple rules can match simultaneously.
 
 
 
