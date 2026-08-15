@@ -18,7 +18,7 @@ The system is composed of five main components:
 
 ### Architecture Diagram
 
-[Industrial Machine Controller - UML Architecture Diagram](https://www.figma.com/board/8MouWkbcXFUzp5CHbB69ZL/UML-diagram--Copy-?node-id=0-1&t=hXqVk7yM9mEQ7JC2-1)
+*Architecture diagrams were created using Figma.*
 
 <img width="5536" height="6080" alt="1  architecture-overview" src="https://github.com/user-attachments/assets/6c16fb6f-c6de-4dab-b856-b01e319e9559" />
 
@@ -92,7 +92,7 @@ A circular chain — deadlock.
 - stage_1 (needs R_A, R_B) → acquires R_A first, then R_B
 - stage_2 (needs R_B, R_C) → acquires R_B first, then R_C
 - stage_3 (needs R_A, R_C) → acquires R_A first, then R_C
-- 
+
 **Mechanism:** Each resource is assigned a numeric priority (R_A=1, R_B=2, R_C=3). Before execution, a stage sorts its required resources by priority and acquires them in that order.
  
 ### 5.2 Atomicity Violation Prevention
