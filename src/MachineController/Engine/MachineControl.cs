@@ -8,13 +8,13 @@ namespace MachineController.Engine
     /// Waits for sensors to be ready (order violation fix)
     /// Enters main loop: read sensors → evaluate rules → launch stages in parallel → repeat
     /// </summary>
-    public class MachineController
+    public class MachineControl
     {
         private readonly List<ISensor> _sensors;
         private readonly RuleEngine _ruleEngine;
         private readonly CancellationTokenSource _cancellationTokenSource = new();
 
-        public MachineController(List<ISensor> sensors, RuleEngine ruleEngine)
+        public MachineControl(List<ISensor> sensors, RuleEngine ruleEngine)
         {
             _sensors = sensors;
             _ruleEngine = ruleEngine;
