@@ -76,16 +76,23 @@ The system must handle three types of concurrency problems.
 **Problem:** Stages run in parallel and share resources. If stages acquire resources in different orders, a circular wait can occur.
  
 Example scenario where all three stages run simultaneously:
-- stage_1 grabs R_B, then wants R_A
-- stage_2 grabs R_C, then wants R_B
-- stage_3 grabs R_A, then wants R_C
-Result: stage_1 is waiting for R_A (held by stage_3), stage_3 is waiting for R_C (held by stage_2), stage_2 is waiting for R_B (held by stage_1). A circular chain — deadlock.
- 
+- stage_1 grabs R_A, then wants R_B
+- stage_2 grabs R_B, then wants R_C
+- stage_3 grabs R_C, then wants R_A
+
+Result: 
+- stage_1 is waiting for R_B (held by stage_2),
+- stage_2 is waiting for R_C (held by stage_3),
+- stage_3 is waiting for R_A (held by stage_1).
+
+A circular chain — deadlock.
+
 **Solution:** Enforce a total ordering on resource acquisition. All stages must acquire resources in alphabetical order: R_A → R_B → R_C, regardless of which resources they need. This breaks the circular wait condition and makes deadlock impossible.
  
 - stage_1 (needs R_A, R_B) → acquires R_A first, then R_B
 - stage_2 (needs R_B, R_C) → acquires R_B first, then R_C
 - stage_3 (needs R_A, R_C) → acquires R_A first, then R_C
+- 
 **Mechanism:** Each resource is assigned a numeric priority (R_A=1, R_B=2, R_C=3). Before execution, a stage sorts its required resources by priority and acquires them in that order.
  
 ### 5.2 Atomicity Violation Prevention
@@ -96,6 +103,7 @@ Example:
 - stage_1 checks: "Is R_A idle?" → Yes
 - stage_3 checks: "Is R_A idle?" → Yes (checked at the same time)
 - Both stages set R_A to Busy — both think they own it
+
 The check-then-acquire is two separate operations, and another thread can intervene between them.
  
 **Solution:** Use `SemaphoreSlim(1)` for each resource. The semaphore combines the check and acquire into a single atomic operation. If one stage acquires the semaphore, the other automatically waits — there is no gap for a race condition.
@@ -113,17 +121,20 @@ The check-then-acquire is two separate operations, and another thread can interv
 - **Sensors** implement a common interface (`ISensor`). Adding a new sensor type (e.g., Humidity) requires creating a new class that implements `ISensor` and registering it with the Machine Controller. No existing code needs to change.
 - **Rules** are stored as a configurable list in the Rule Engine. Adding a new rule means adding one entry to the list — no changes to existing rules.
 - **Resources** are registered dynamically. Adding a new resource (e.g., R_D) requires creating a new `Resource` instance and updating the stage map.
+
 ### Maintainability
  
 - Each component has a single, clear responsibility. If sensor reading logic needs to change, only the Sensor class is affected.
 - Components are loosely coupled — the Rule Engine does not know how sensors produce their values, and Stages do not know how rules work.
 - Small, focused classes make the codebase easy to navigate and understand.
+
 ### Testability
  
 - Each component can be tested independently. The Rule Engine can be tested by passing fake sensor values and verifying which stages it returns — no real sensors needed.
 - Stages can be tested with mock resources to verify correct acquisition order and release behavior.
 - Concurrency behavior can be tested by running multiple stages in parallel and verifying that no resource is acquired by two stages simultaneously.
 - Interfaces allow swapping real implementations with test doubles.
+
 ### Reliability
  
 - Resources have an `Error` state to handle failure scenarios. If a stage encounters an error during processing, the resource transitions to Error instead of remaining stuck in Busy.
