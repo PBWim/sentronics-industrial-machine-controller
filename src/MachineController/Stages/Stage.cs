@@ -45,6 +45,17 @@ namespace MachineController.Stages
                 // Simulates the stage doing actual work
                 await Task.Delay(500);
             }
+            catch (Exception ex)
+            {
+                // If something goes wrong, mark all acquired resources as Error
+                // Error path: Acquire → Process fails → SetError → Release (state goes Idle → Busy → Error → Idle)
+                Console.WriteLine($"[{Name}] Error: {ex.Message}");
+
+                foreach (var resource in _requiredResources)
+                {
+                    resource.SetError();
+                }
+            }
             finally
             {
                 // Always release resources, even if an exception occurs

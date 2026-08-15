@@ -58,5 +58,13 @@ namespace MachineController.Resources
             // Let the next thread in
             _semaphore.Release();           
         }
+
+        /// <summary>
+        /// Marks the resource as Error when something goes wrong during stage processing.
+        /// </summary>
+        public void SetError()
+        {
+            State = ResourceState.Error;
+        }
     }
 }
