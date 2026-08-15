@@ -21,6 +21,13 @@ namespace MachineController.Stages
             _requiredResources = requiredResources.OrderBy(r => r.Priority).ToList();
         }
 
+        /// <summary>
+        /// Flow for a stage is : 
+        ///     1. Acquire all resources (one by one, in order)
+        ///     2. Do the work (needs all of them)
+        ///     3. Release all resources (in the finally block)
+        /// </summary>
+        /// <returns></returns>
         public async Task ExecuteAsync()
         {
             try

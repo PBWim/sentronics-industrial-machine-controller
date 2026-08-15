@@ -59,10 +59,12 @@ namespace MachineController.Engine
                     await Task.WhenAll(tasks);
 
                     Console.WriteLine("[Controller] All stages completed.");
+                    Console.WriteLine("[Controller] =====================");
                 }
                 else
                 {
                     Console.WriteLine("[Controller] No rules matched. Skipping.");
+                    Console.WriteLine("[Controller] ===========================");
                 }
 
                 // Wait before next cycle
