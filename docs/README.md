@@ -28,7 +28,7 @@ The system is composed of five main components:
 
 The Machine Controller is the entry point of the system. It starts all sensors, waits for them to be ready, then enters a continuous loop: read sensor values, evaluate rules, launch stages, wait for completion, repeat.
 
-<img width="3232" height="10528" alt="2  machine-controller-flow" src="https://github.com/user-attachments/assets/f98a471e-25e2-44f3-8250-ba4ce03c2c2f" />
+<img width="3232" height="10528" alt="2  machine-controller-flow" src="https://github.com/user-attachments/assets/e18ec17f-48ef-436e-800c-4624bbde375e" />
 
 ### Rule Engine Flow
 
@@ -52,7 +52,7 @@ Each stage knows which resources it needs. Before executing, it sorts its requir
 - stage_2: R_B, R_C
 - stage_3: R_A, R_C
 
-<img width="2944" height="8160" alt="4  stage-execution-flow" src="https://github.com/user-attachments/assets/0d58ea04-b322-44b5-830a-0abbf6920191" />
+<img width="2944" height="8160" alt="4  stage-execution-flow" src="https://github.com/user-attachments/assets/5a69e51a-1db8-4283-ae5b-f738263f6406" />
 
 ## 4. Communication Patterns
 
