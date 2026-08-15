@@ -15,5 +15,9 @@
         public const string Stage1 = "stage_1";
         public const string Stage2 = "stage_2";
         public const string Stage3 = "stage_3";
+
+        public const string ResourceA = "R_A";
+        public const string ResourceB = "R_B";
+        public const string ResourceC = "R_C";
     }
 }
