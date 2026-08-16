@@ -4,6 +4,8 @@
 
 This system simulates the software for an industrial manufacturing machine used in automated production environments. The machine has sensors (Temperature, Pressure) that continuously monitor its state. Based on sensor readings, the system determines which processing stages to execute. Stages run in parallel and share physical resources (robotic arm, conveyor belt, heating element), requiring careful concurrency management to prevent deadlocks and race conditions.
 
+To make the system concrete: the machine has a Robotic Arm (R_A), a Conveyor Belt (R_B), and a Heating Element (R_C). The three processing stages represent real factory operations — Cutting (stage_1), Heating (stage_2), and Assembly (stage_3). Each stage needs specific equipment to operate, and since there is only one of each, stages running in parallel must coordinate access to avoid conflicts.
+
 ## 2. Architecture
 
 The system is composed of five main components:
@@ -17,6 +19,14 @@ The system is composed of five main components:
 | **Machine Controller** | The top-level coordinator. Starts sensors, reads their values, passes them to the Rule Engine, and launches the resulting stages in parallel. |
 
 ### Architecture Diagram
+
+### Initial Design Sketch
+
+The following sketch captures the initial design thinking before implementation.
+
+<img width="1280" height="834" alt="initial-design-sketch" src="https://github.com/user-attachments/assets/425e3bf3-f47e-458f-bb6b-304906e6fb52" />
+
+-----
 
 *Architecture diagrams were created using Figma.*
 
@@ -36,9 +46,9 @@ The Rule Engine receives the current sensor values and checks each rule. If a ru
 
 **Rules:**
  
-- Temperature > 10 AND Pressure < 100 → stage_1, stage_2
-- Temperature > 5 AND Pressure < 50 → stage_3, stage_2
-- Temperature > 20 AND Pressure < 100 → stage_1, stage_3
+- Temperature > 10 AND Pressure < 100 → Cutting (stage_1), Heating (stage_2)
+- Temperature > 5 AND Pressure < 50 → Assembly (stage_3), Heating (stage_2)
+- Temperature > 20 AND Pressure < 100 → Cutting (stage_1), Assembly (stage_3)
 
 <img width="4832" height="9088" alt="3  rule-engine-flow" src="https://github.com/user-attachments/assets/4cd81a24-5f7d-485b-9519-665487cc3d15" />
 
@@ -48,9 +58,9 @@ Each stage knows which resources it needs. Before executing, it sorts its requir
 
 **Stage Map:**
 
-- stage_1: R_A, R_B
-- stage_2: R_B, R_C
-- stage_3: R_A, R_C
+- stage_1 (Cutting): R_A (Robotic Arm), R_B (Conveyor Belt)
+- stage_2 (Heating): R_B (Conveyor Belt), R_C (Heating Element)
+- stage_3 (Assembly): R_A (Robotic Arm), R_C (Heating Element)
 
 <img width="2944" height="8160" alt="4  stage-execution-flow" src="https://github.com/user-attachments/assets/5a69e51a-1db8-4283-ae5b-f738263f6406" />
 
@@ -75,23 +85,23 @@ The system must handle three types of concurrency problems.
  
 **Problem:** Stages run in parallel and share resources. If stages acquire resources in different orders, a circular wait can occur.
  
-Example scenario where all three stages run simultaneously:
-- stage_1 grabs R_A, then wants R_B
-- stage_2 grabs R_B, then wants R_C
-- stage_3 grabs R_C, then wants R_A
+Example scenario where all three stages run simultaneously without ordering:
+- Cutting grabs Robotic Arm (R_A), then wants Conveyor Belt (R_B)
+- Heating grabs Conveyor Belt (R_B), then wants Heating Element (R_C)
+- Assembly grabs Heating Element (R_C), then wants Robotic Arm (R_A)
 
-Result: 
-- stage_1 is waiting for R_B (held by stage_2),
-- stage_2 is waiting for R_C (held by stage_3),
-- stage_3 is waiting for R_A (held by stage_1).
+Result:
+- Cutting is waiting for the Conveyor Belt (held by Heating),
+- Heating is waiting for the Heating Element (held by Assembly),
+- Assembly is waiting for the Robotic Arm (held by Cutting).
 
-A circular chain — deadlock.
+A circular chain — everyone is holding something and waiting for something else. Deadlock.
 
 **Solution:** Enforce a total ordering on resource acquisition. All stages must acquire resources in alphabetical order: R_A → R_B → R_C, regardless of which resources they need. This breaks the circular wait condition and makes deadlock impossible.
  
-- stage_1 (needs R_A, R_B) → acquires R_A first, then R_B
-- stage_2 (needs R_B, R_C) → acquires R_B first, then R_C
-- stage_3 (needs R_A, R_C) → acquires R_A first, then R_C
+- Cutting (needs Robotic Arm, Conveyor Belt) → acquires Robotic Arm (R_A) first, then Conveyor Belt (R_B)
+- Heating (needs Conveyor Belt, Heating Element) → acquires Conveyor Belt (R_B) first, then Heating Element (R_C)
+- Assembly (needs Robotic Arm, Heating Element) → acquires Robotic Arm (R_A) first, then Heating Element (R_C)
 
 **Mechanism:** Each resource is assigned a numeric priority (R_A=1, R_B=2, R_C=3). Before execution, a stage sorts its required resources by priority and acquires them in that order.
  
@@ -100,9 +110,9 @@ A circular chain — deadlock.
 **Problem:** When two stages check a resource's state and try to acquire it simultaneously, a race condition can occur.
  
 Example:
-- stage_1 checks: "Is R_A idle?" → Yes
-- stage_3 checks: "Is R_A idle?" → Yes (checked at the same time)
-- Both stages set R_A to Busy — both think they own it
+- Cutting checks: "Is the Robotic Arm (R_A) idle?" → Yes
+- Assembly checks: "Is the Robotic Arm (R_A) idle?" → Yes (checked at the same time)
+- Both stages set the Robotic Arm to Busy — both think they own it
 
 The check-then-acquire is two separate operations, and another thread can intervene between them.
  
@@ -110,8 +120,8 @@ The check-then-acquire is two separate operations, and another thread can interv
  
 ### 5.3 Order Violation Prevention
  
-**Problem:** The Machine Controller starts the sensors and then immediately begins the main loop. If the main loop reads sensor values before the sensors have produced their first reading, the system could operate on default/uninitialized values, leading to incorrect rule evaluation.
- 
+**Problem:** The Machine Controller starts the Temperature and Pressure sensors and then immediately begins the main loop. If the main loop reads sensor values before the sensors have produced their first reading, the machine could start Cutting, Heating, or Assembly based on default/uninitialized values — potentially dangerous in a real factory.
+
 **Solution:** Use `ManualResetEventSlim` as a signal. Sensors signal when they have produced their first valid reading. The Machine Controller waits for this signal before entering the main loop. This guarantees that sensor data is available before any stages are launched.
 
 ## 6. Design Considerations
