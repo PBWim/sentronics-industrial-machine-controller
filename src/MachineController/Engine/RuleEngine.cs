@@ -13,19 +13,19 @@ namespace MachineController.Engine
             // Adding a new rule is just adding one more entry. No existing code changes needed (extensibility).
             _rules.Add(new Rule(
                 MachineControllerConstants.Rule1,
-                (temp, pressure) => temp > 10 && pressure < 100,
+                (readings) => readings[MachineControllerConstants.TemperatureSensorType] > 10 && readings[MachineControllerConstants.PressureSensorType] < 100,
                 allStages.Where(s => s.Name == MachineControllerConstants.Stage1 || s.Name == MachineControllerConstants.Stage2).ToList()
             ));
 
             _rules.Add(new Rule(
                 MachineControllerConstants.Rule2,
-                (temp, pressure) => temp > 5 && pressure < 50,
+                (readings) => readings[MachineControllerConstants.TemperatureSensorType] > 5 && readings[MachineControllerConstants.PressureSensorType] < 50,
                 allStages.Where(s => s.Name == MachineControllerConstants.Stage3 || s.Name == MachineControllerConstants.Stage2).ToList()
             ));
 
             _rules.Add(new Rule(
                 MachineControllerConstants.Rule3,
-                (temp, pressure) => temp > 20 && pressure < 100,
+                (readings) => readings[MachineControllerConstants.TemperatureSensorType] > 20 && readings[MachineControllerConstants.PressureSensorType] < 100,
                 allStages.Where(s => s.Name == MachineControllerConstants.Stage1 || s.Name == MachineControllerConstants.Stage3).ToList()
             ));
         }
@@ -34,13 +34,13 @@ namespace MachineController.Engine
         /// Evaluate all rules against current sensor values.
         /// Returns a deduplicated list of stages that should execute.
         /// </summary>
-        public List<Stage> Evaluate(double temperature, double pressure)
+        public List<Stage> Evaluate(Dictionary<string, double> sensorReadings)
         {
             var stagesToRun = new List<Stage>();
 
             foreach (var rule in _rules)
             {
-                if (rule.Condition(temperature, pressure))
+                if (rule.Condition(sensorReadings))
                 {
                     stagesToRun.AddRange(rule.Stages);
                 }

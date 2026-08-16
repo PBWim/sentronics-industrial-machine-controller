@@ -22,6 +22,9 @@ namespace MachineController.Engine
 
         public async Task StartAsync()
         {
+            // Store initial readings for rule evaluation
+            var readings = new Dictionary<string, double>();
+            
             // 1. Start all sensors on their own threads
             foreach (var sensor in _sensors)
             {
@@ -42,12 +45,14 @@ namespace MachineController.Engine
             while (!_cancellationTokenSource.Token.IsCancellationRequested)
             {
                 // Read current sensor values
-                var temperature = _sensors.First(s => s.Type == MachineControllerConstants.TemperatureSensorType).CurrentValue;
-                var pressure = _sensors.First(s => s.Type == MachineControllerConstants.PressureSensorType).CurrentValue;
-                Console.WriteLine($"[Controller] Temperature: {temperature}, Pressure: {pressure}");
+                foreach (var sensor in _sensors)
+                {
+                    readings[sensor.Type] = sensor.CurrentValue;
+                }
+                Console.WriteLine($"[Controller] Sensor Readings: {string.Join(", ", readings.Select(r => $"{r.Key}: {r.Value}"))}");
 
                 // Evaluate rules
-                var stagesToRun = _ruleEngine.Evaluate(temperature, pressure);
+                var stagesToRun = _ruleEngine.Evaluate(readings);
 
                 if (stagesToRun.Any())
                 {

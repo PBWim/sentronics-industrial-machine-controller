@@ -1,4 +1,5 @@
-﻿using MachineController.Engine;
+﻿using MachineController.Common;
+using MachineController.Engine;
 using MachineController.Resources;
 using MachineController.Sensors;
 using MachineController.Stages;
@@ -17,14 +18,14 @@ internal class Program
     private static async Task Main(string[] args)
     {
         // Create resources with priority for lock ordering
-        Resource resourceA = new ("R_A", 1);
-        Resource resourceB = new ("R_B", 2);
-        Resource resourceC = new ("R_C", 3);
+        Resource resourceA = new (MachineControllerConstants.ResourceA, 1);
+        Resource resourceB = new (MachineControllerConstants.ResourceB, 2);
+        Resource resourceC = new (MachineControllerConstants.ResourceC, 3);
 
         // Create stages with their required resources
-        Stage stage1 = new ("stage_1", new List<Resource> { resourceA, resourceB });
-        Stage stage2 = new ("stage_2", new List<Resource> { resourceB, resourceC });
-        Stage stage3 = new ("stage_3", new List<Resource> { resourceA, resourceC });
+        Stage stage1 = new (MachineControllerConstants.Stage1, new List<Resource> { resourceA, resourceB });
+        Stage stage2 = new (MachineControllerConstants.Stage2, new List<Resource> { resourceB, resourceC });
+        Stage stage3 = new (MachineControllerConstants.Stage3, new List<Resource> { resourceA, resourceC });
 
         // Create sensors
         List<ISensor> sensors = new()

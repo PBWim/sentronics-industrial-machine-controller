@@ -24,9 +24,15 @@ namespace MachineController.Tests
 
             var ruleEngine = new RuleEngine(new List<Stage> { stage1, stage2, stage3 });
 
+            var readings = new Dictionary<string, double>
+            {
+                [MachineControllerConstants.TemperatureSensorType] = 15,
+                [MachineControllerConstants.PressureSensorType] = 80
+            };
+
             // Act
             // Temperature > 10, Pressure < 100 → stage_1, stage_2
-            var result = ruleEngine.Evaluate(15, 80);
+            var result = ruleEngine.Evaluate(readings);
 
             // Assert
             Assert.Contains(result, s => s.Name == MachineControllerConstants.Stage1);
@@ -50,9 +56,15 @@ namespace MachineController.Tests
 
             var ruleEngine = new RuleEngine(new List<Stage> { stage1, stage2, stage3 });
 
+            var readings = new Dictionary<string, double>
+            {
+                [MachineControllerConstants.TemperatureSensorType] = 8,
+                [MachineControllerConstants.PressureSensorType] = 30
+            };
+
             // Act
             // Temperature > 5, Pressure < 50 → stage_3, stage_2
-            var result = ruleEngine.Evaluate(8, 30);
+            var result = ruleEngine.Evaluate(readings);
 
             // Assert
             Assert.Contains(result, s => s.Name == MachineControllerConstants.Stage3);
@@ -76,9 +88,15 @@ namespace MachineController.Tests
 
             var ruleEngine = new RuleEngine(new List<Stage> { stage1, stage2, stage3 });
 
+            var readings = new Dictionary<string, double>
+            {
+                [MachineControllerConstants.TemperatureSensorType] = 25,
+                [MachineControllerConstants.PressureSensorType] = 80
+            };
+
             // Act
             // Temperature > 20, Pressure < 100 → stage_1, stage_3
-            var result = ruleEngine.Evaluate(25, 80);
+            var result = ruleEngine.Evaluate(readings);
 
             // Assert
             Assert.Contains(result, s => s.Name == MachineControllerConstants.Stage1);
@@ -103,13 +121,19 @@ namespace MachineController.Tests
 
             var ruleEngine = new RuleEngine(new List<Stage> { stage1, stage2, stage3 });
 
+            var readings = new Dictionary<string, double>
+            {
+                [MachineControllerConstants.TemperatureSensorType] = 25,
+                [MachineControllerConstants.PressureSensorType] = 30
+            };
+
             // Act
             // Temperature=25, Pressure=30 → all 3 rules match
             // Rule 1: stage_1, stage_2
             // Rule 2: stage_3, stage_2
             // Rule 3: stage_1, stage_3
             // After dedup: stage_1, stage_2, stage_3 (each once)
-            var result = ruleEngine.Evaluate(25, 30);
+            var result = ruleEngine.Evaluate(readings);
 
             // Assert
             Assert.Equal(3, result.Count);
@@ -132,9 +156,15 @@ namespace MachineController.Tests
 
             var ruleEngine = new RuleEngine(new List<Stage> { stage1, stage2, stage3 });
 
+            var readings = new Dictionary<string, double>
+            {
+                [MachineControllerConstants.TemperatureSensorType] = 3,
+                [MachineControllerConstants.PressureSensorType] = 120
+            };
+
             // Act
             // Temperature=3, Pressure=120 → no rules match
-            var result = ruleEngine.Evaluate(3, 120);
+            var result = ruleEngine.Evaluate(readings);
 
             // Assert
             Assert.Empty(result);
