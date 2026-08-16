@@ -10,9 +10,19 @@ namespace MachineController.Sensors
 
         private readonly Random _random = new();
 
+        // The sensor should produce a new reading every 100ms, and the readings should be random values within a specified range (e.g., 0-30 degrees Celsius for temperature).
+        private readonly int _minValue;
+        private readonly int _maxValue;
+
         public string Type => MachineControllerConstants.TemperatureSensorType;
 
         public double CurrentValue { get; private set; }
+
+        public TemperatureSensor(int minValue, int maxValue)
+        {
+            _minValue = minValue;
+            _maxValue = maxValue;
+        }
 
         /// <summary>
         /// Start a background task that generates a new temperature reading every 100ms.
@@ -24,7 +34,7 @@ namespace MachineController.Sensors
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    CurrentValue = _random.Next(0, 30);
+                    CurrentValue = _random.Next(_minValue, _maxValue);
 
                     // 2. Then when the sensor gets its first reading, it should signal the Machine Controller that it is ready to be used.
                     _ready.Set();

@@ -30,8 +30,8 @@ internal class Program
         // Create sensors
         List<ISensor> sensors = new()
         {
-            new TemperatureSensor(),
-            new PressureSensor()
+            new TemperatureSensor(0, 30),
+            new PressureSensor(0, 120)
         };
 
         // Create rule engine with all stages

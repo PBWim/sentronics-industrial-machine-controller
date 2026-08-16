@@ -14,7 +14,7 @@ namespace MachineController.Tests
         {
             // Arrange
             var cts = new CancellationTokenSource();
-            var sensor = new TemperatureSensor();
+            var sensor = new TemperatureSensor(0, 30);
 
             // Act
             sensor.Start(cts.Token);
