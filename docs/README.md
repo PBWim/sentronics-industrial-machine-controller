@@ -42,7 +42,7 @@ The Machine Controller is the entry point of the system. It starts all sensors, 
 
 ### Rule Engine Flow
 
-The Rule Engine receives the current sensor values and checks each rule. If a rule's conditions are met, its associated stages are added to the execution list. The list is deduplicated before being returned.
+The Rule Engine receives the current sensor values as a dictionary of sensor readings and checks each rule. This design allows new sensor types to be added without changing the Evaluate method signature. If a rule's conditions are met, its associated stages are added to the execution list. The list is deduplicated before being returned.
 
 **Rules:**
  
@@ -161,12 +161,14 @@ The check-then-acquire is two separate operations, and another thread can interv
 | **No external dependencies** | All required concurrency mechanisms are available in the .NET base class library |
  
 ## 8. Assumptions
- 
+
 - The system controls a single manufacturing machine.
-- Sensor values are simulated (generated randomly or from a predefined pattern).
-- Stage processing is simulated (using `Task.Delay` to represent work being done).
+- The system currently has two sensors: Temperature and Pressure. Sensor values are simulated using random generation within predefined ranges (Temperature: 0–30, Pressure: 0–120).
+- The system has three processing stages: Cutting (stage_1), Heating (stage_2), and Assembly (stage_3). Stage processing is simulated using `Task.Delay` to represent work being done.
+- There are three resources: Robotic Arm (R_A), Conveyor Belt (R_B), and Heating Element (R_C). Only one instance of each resource exists. The concurrency strategy is designed around this single-instance constraint.
 - Resources are simple in-memory objects with state tracking, not connected to real hardware.
 - All three rules are evaluated on every sensor update cycle; multiple rules can match simultaneously.
+- The system is designed to be extensible. New sensors, stages, rules, and resources can be added with minimal changes to existing code.
 
 
 
